@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import legend, show
 from models.advection import Advection
 from splitfvm.domain import Domain
 from splitfvm.simulation import Simulation
@@ -21,5 +21,5 @@ for i in range(10):
 draw(d, "l2")
 
 # Show plot
-plt.legend()
-plt.show()
+legend()
+show()
