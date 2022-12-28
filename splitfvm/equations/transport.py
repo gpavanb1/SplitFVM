@@ -20,5 +20,5 @@ class TransportEquation:
         # Calculate fluxes
         Fw, Fe = fluxes(self.F, cell_sub, scheme)
         # DFw, DFe = diffusion_fluxes(self.D, cell_sub, scheme)
-        rhs = self.S(cell_sub) + (1 / dx) * (Fw - Fe)  # + (DFe - DFw)
+        rhs = self.S(cell_sub) - (1 / dx) * (Fw - Fe)  # + (DFe - DFw)
         return rhs
