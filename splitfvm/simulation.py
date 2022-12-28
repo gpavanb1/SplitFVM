@@ -8,6 +8,7 @@ class Simulation:
     def __init__(self, d: Domain, m: Model):
         self._d = d
         self._s = System(m)
+        self._r = Refiner()
 
     def evolve(self, dt: float, refinement: bool = False):
         # Fill BCs
@@ -22,4 +23,4 @@ class Simulation:
 
         # Perform mesh refinement if enabled
         if refinement:
-            Refiner.refine(self._d)
+            self._r.refine(self._d)
