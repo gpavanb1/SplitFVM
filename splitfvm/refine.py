@@ -4,6 +4,9 @@ from .domain import Domain
 from .error import SFVM
 
 
+eps = math.ulp(1.0)
+
+
 class Refiner:
     def __init__(self):
         # Default values
@@ -30,10 +33,9 @@ class Refiner:
     def set_max_points(self, npmax):
         self._npmax = npmax
 
-    @classmethod
     # https://cantera.org/documentation/docs-2.5/doxygen/html/dd/d3c/refine_8cpp_source.html
     # Using only slope, curve and prune
-    def refine(cls, d: Domain):
+    def refine(self, d: Domain):
         cells = d.interior()
         n = len(cells)
 
@@ -47,7 +49,7 @@ class Refiner:
         c = {}
         loc = {}
 
-        if len(cells) > cls._npmax:
+        if len(cells) > self._npmax:
             raise SFVM("Exceeded maximum number of points")
 
         dz = [cells[i + 1].x() - cells[i].x() for i in range(n - 1)]
@@ -55,7 +57,7 @@ class Refiner:
         nv = len(cells[1].values())
 
         for i in range(nv):
-            name = cls._components[i]
+            name = d._components[i]
             # Slopes (s) for component i
             s = [
                 (cells[j + 1].value(i) - cells[j].value(i))
@@ -74,24 +76,24 @@ class Refiner:
             # range of s is greater than a fraction 'min_range' of max
             # |s|. This eliminates components that consist of small
             # fluctuations on a constant slope background.
-            if (smax - smin) > cls._min_range * ss:
+            if (smax - smin) > self._min_range * ss:
                 # maximum allowable difference in slope between
                 # adjacent points
-                dmax = cls._curve * (smax - smin)
+                dmax = self._curve * (smax - smin)
                 for j in range(n - 2):
-                    r = abs(s[j + 1] - s[j]) / (dmax + math.ulp / dz[j])
+                    r = abs(s[j + 1] - s[j]) / (dmax + eps / dz[j])
                     if (
                         r > 1.0
-                        and dz[j] >= 2 * cls._min_grid
-                        and dz[j + 1] >= 2 * cls._min_grid
+                        and dz[j] >= 2 * self._min_grid
+                        and dz[j + 1] >= 2 * self._min_grid
                     ):
                         c[name] = 1
                         loc[j] = 1
                         loc[j + 1] = 1
 
-                    if r >= cls._prune:
+                    if r >= self._prune:
                         keep[j + 1] = 1
-                    elif keep[j + 1] == 0:
+                    elif (j + 1) not in keep:
                         keep[j + 1] = -1
 
         # Don't allow pruning to remove multiple adjacent grid points
@@ -100,7 +102,7 @@ class Refiner:
             if keep[j] == -1 and keep[j - 1] == -1:
                 keep[j] = 1
 
-        cls.show_changes(loc, c)
+        self.show_changes(loc, c)
 
         #######
         # AMR
@@ -109,7 +111,7 @@ class Refiner:
         #######
         # Iterate over m_keep and remove points
         for i, cell in enumerate(cells):
-            if keep[i] == -1:
+            if i in keep and keep[i] == -1:
                 cell.to_delete = True
 
         # Add cells at loc
@@ -123,7 +125,6 @@ class Refiner:
             if cell.to_delete:
                 del cell
 
-    @classmethod
     def show_changes(cls, loc, c):
         if len(loc) != 0:
             print("#" * 78)
