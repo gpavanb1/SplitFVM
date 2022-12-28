@@ -23,4 +23,4 @@ class Cell:
         self._value[i] = val
 
     def update(self, dt, residual):
-        self._value -= dt * residual
+        self._value += dt * residual
