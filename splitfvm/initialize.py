@@ -2,7 +2,7 @@ import numpy as np
 from .domain import Domain
 
 # https://github.com/comp-physics/WENO-scalar/blob/master/params.py
-def set_initial_condition(d: Domain, v: str, type="tophat"):
+def set_initial_condition(d: Domain, v: str, type="gaussian"):
     # Find index of component
     idx = d.component_index(v)
 
@@ -23,5 +23,8 @@ def set_initial_condition(d: Domain, v: str, type="tophat"):
     elif type == "rarefaction":
         for cell in d.interior():
             cell.set_value(idx, 2.0 if cell.x() > 0.5 else 1.0)
+    elif type == "gaussian":
+        for cell in d.interior():
+            cell.set_value(idx, np.exp(-200 * (cell.x() - 0.25) ** 2.0))
     else:
         raise NotImplementedError
