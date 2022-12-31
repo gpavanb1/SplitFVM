@@ -29,5 +29,6 @@ class Cell:
     def set_value(self, i: int, val):
         self._value[i] = val
 
+    # Note boundary does not have update
     def update(self, dt, residual):
         self._value += dt * residual

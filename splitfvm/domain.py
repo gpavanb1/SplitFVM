@@ -26,6 +26,7 @@ class Domain:
     ):
         if ng % 2 != 0:
             raise SFVM("nb must be an even number")
+
         # Initialize a uniform grid
         xarr = linspace(xmin, xmax, nx)
         nv = len(components)
@@ -45,6 +46,15 @@ class Domain:
 
         return Domain(interior, boundaries, components)
 
+    def ilo(self):
+        return self._nb
+
+    def ihi(self):
+        return self._nb + self._nx - 1
+
+    def nb(self):
+        return self._nb
+
     def cells(self):
         return self._domain
 
@@ -60,6 +70,9 @@ class Domain:
 
     def component_index(self, v: str):
         return self._components.index(v)
+
+    def component_name(self, i: int):
+        return self._components[i]
 
     def positions(self):
         return [cell.x() for cell in self.cells()]
@@ -83,8 +96,9 @@ class Domain:
             lb, rb = self.boundaries()
 
             # Get interior indices
-            ilo = self._nb
-            ihi = self._nx + self._nb - 1
+            ilo = self.ilo()
+            ihi = self.ihi()
+
             # left boundary
             # Ghost cells are the rightmost elements (same order)
             for i, b in enumerate(lb):

@@ -75,7 +75,7 @@ class Refiner:
         nv = len(cells[1].values())
 
         for i in range(nv):
-            name = d._components[i]
+            name = d.component_name(i)
 
             # Get components at all points
             v = [cells[j].value(i) for j in range(n)]

@@ -27,9 +27,16 @@ class Boundary:
     def value(self, i: int):
         return self._value[i]
 
+    # Note cell doesn't have set_x
     def set_x(self, x: float, xmin=0.0, xmax=1.0):
         if x >= xmin and x <= xmax:
             raise SFVM("Boundary cell cannot have interior X-value")
+
+        # Check if correct type specified
+        if (x < xmin and self._type == btype.RIGHT) or (
+            x > xmax and self._type == btype.LEFT
+        ):
+            raise SFVM("Inappropriate boundary type given")
         self._x = x
 
     def set_value(self, i: int, val):
