@@ -2,6 +2,9 @@ from .domain import Domain
 from .system import System
 from .refine import Refiner
 from .model import Model
+
+# ICs and BCs
+from .bc import apply_BC
 from .initialize import set_initial_condition
 
 
@@ -16,10 +19,14 @@ class Simulation:
         for c, ictype in ics.items():
             set_initial_condition(self._d, c, ictype)
 
+        # Fill BCs
+        for c, bctype in self._bcs.items():
+            apply_BC(self._d, c, bctype)
+
     def evolve(self, dt: float, refinement: bool = False):
         # Fill BCs
         for c, bctype in self._bcs.items():
-            self._d.apply_BC(c, bctype)
+            apply_BC(self._d, c, bctype)
 
         # Evaluate residuals (values, face-values, fluxes) from equations
         interior_residual_block = self._s.residuals(self._d)
