@@ -15,7 +15,7 @@ class Refiner:
         self._slope = 0.8
         self._curve = 0.8
         # Negative prune factor disables it
-        self._prune = 1e-3
+        self._prune = -0.001
 
         # Maximum points in grid
         self._npmax = 1000
@@ -61,6 +61,10 @@ class Refiner:
         keep = {}
         c = {}
         loc = {}
+
+        # Preserve border points
+        keep[0] = 1
+        keep[n - 1] = 1
 
         if len(cells) > self._npmax:
             raise SFVM("Exceeded maximum number of points")
@@ -138,24 +142,24 @@ class Refiner:
                         keep[j + 1] = -1
 
         # Refine based on properties of the grid itself
-        for j in range(n - 1):
+        for j in range(1, n - 1):
             # Add a new point if the ratio with left interval is too large
             if dz[j] > self._ratio * dz[j - 1]:
                 loc[j] = 1
                 c[f"point {j}"] = 1
-                keep[max(j - 1, 0)] = 1
+                keep[j - 1] = 1
                 keep[j] = 1
-                keep[min(j + 1, d._nx - 1)] = 1
-                keep[min(j + 2, d._nx - 1)] = 1
+                keep[j + 1] = 1
+                keep[j + 2] = 1
 
             # Add a point if the ratio with right interval is too large
             if dz[j] < dz[j - 1] / self._ratio:
-                loc[max(j - 1, 0)] = 1
+                loc[j - 1] = 1
                 c[f"point {max(j-1, 0)}"] = 1
-                keep[max(j - 2, 0)] = 1
-                keep[max(j - 1, 0)] = 1
+                keep[j - 2] = 1
+                keep[j - 1] = 1
                 keep[j] = 1
-                keep[min(j + 1, d._nx)] = 1
+                keep[j + 1] = 1
 
             # Keep the point if removing would make the ratio with the left
             # interval too large.
