@@ -10,6 +10,13 @@ class Cell:
         # AMR deletion flag
         self.to_delete = False
 
+    # Creating operators for sorting
+    def __eq__(self, other):
+        return self._x == other._x
+
+    def __lt__(self, other):
+        return self._x < other._x
+
     def x(self):
         return self._x
 

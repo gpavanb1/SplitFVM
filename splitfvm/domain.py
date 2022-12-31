@@ -34,10 +34,11 @@ class Domain:
         # Create boundaries
         dx = (xmax - xmin) / nx
         left_boundaries = [
-            Boundary(xmin - i * dx, btype.LEFT, zeros(nv)) for i in range(int(ng / 2))
+            Boundary(xmin - (i + 1) * dx, btype.LEFT, zeros(nv))
+            for i in range(int(ng / 2))
         ]
         right_boundaries = [
-            Boundary(xmax + (i * dx), btype.RIGHT, zeros(nv))
+            Boundary(xmax + (i + 1) * dx, btype.RIGHT, zeros(nv))
             for i in range(int(ng / 2))
         ]
         boundaries = left_boundaries + right_boundaries
@@ -52,6 +53,10 @@ class Domain:
 
     def interior(self):
         return self._domain[self._nb : -self._nb]
+
+    def set_interior(self, cells):
+        self._nx = len(cells)
+        self._domain = [*self._domain[: self._nb], *cells, *self._domain[-self._nb :]]
 
     def component_index(self, v: str):
         return self._components.index(v)
@@ -70,21 +75,27 @@ class Domain:
         for i, cell in enumerate(self.interior()):
             cell.update(dt, interior_residual_block[i])
 
-    def apply_BC(self, v: str, bc: str = "periodic"):
+    def apply_BC(self, v: str, bc: str = "periodic", xmin=0.0, xmax=1.0):
         # Find index of component
         idx = self.component_index(v)
 
         if bc == "periodic":
             lb, rb = self.boundaries()
+
+            # Get interior indices
+            ilo = self._nb
+            ihi = self._nx + self._nb - 1
             # left boundary
             # Ghost cells are the rightmost elements (same order)
             for i, b in enumerate(lb):
-                b.set_value(idx, self._domain[i + self._nx].value(idx))
+                b.set_x(xmin - (xmax - self._domain[ihi - (i + 1)].x()))
+                b.set_value(idx, self._domain[ihi - (i + 1)].value(idx))
 
             # right boundary
             # Ghost cells are the leftmost elements (same order)
             for i, b in enumerate(rb):
-                b.set_value(idx, self._domain[i + self._nb].value(idx))
+                b.set_x(xmax + (self._domain[(i + 1) + ilo].x() - xmin))
+                b.set_value(idx, self._domain[(i + 1) + ilo].value(idx))
 
         elif self.bc == "outflow":
             # Find the lowest and highest interior indices

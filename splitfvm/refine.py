@@ -11,10 +11,11 @@ class Refiner:
     def __init__(self):
         # Default values
         # Borrowed from Cantera
+        self._ratio = 10.0
         self._slope = 0.8
         self._curve = 0.8
         # Negative prune factor disables it
-        self._prune = -0.1
+        self._prune = 1e-3
 
         # Maximum points in grid
         self._npmax = 1000
@@ -25,7 +26,19 @@ class Refiner:
         # Minimum grid spacing
         self._min_grid = 1e-10
 
-    def set_criteria(self, slope, curve, prune):
+    def set_criteria(self, ratio, slope, curve, prune):
+        if ratio < 2.0:
+            raise SFVM(f"ratio must be greater than 2.0 ({ratio} was specified).")
+        elif slope < 0.0 or slope > 1.0:
+            raise SFVM(f"slope must be between 0.0 and 1.0 ({slope} was specified).")
+        elif curve < 0.0 or curve > 1.0:
+            raise SFVM(f"curve must be between 0.0 and 1.0 ({curve} was specified).")
+        elif prune > curve or prune > slope:
+            raise (
+                f"prune must be less than 'curve' and 'slope' ({prune} was specified)."
+            )
+
+        self._ratio = ratio
         self._slope = slope
         self._curve = curve
         self._prune = prune
@@ -33,9 +46,9 @@ class Refiner:
     def set_max_points(self, npmax):
         self._npmax = npmax
 
-    # https://cantera.org/documentation/docs-2.5/doxygen/html/dd/d3c/refine_8cpp_source.html
-    # Using only slope, curve and prune
     def refine(self, d: Domain):
+        # https://cantera.org/documentation/docs-2.5/doxygen/html/dd/d3c/refine_8cpp_source.html
+        # Using only slope, curve and prune
         cells = d.interior()
         n = len(cells)
 
@@ -52,25 +65,53 @@ class Refiner:
         if len(cells) > self._npmax:
             raise SFVM("Exceeded maximum number of points")
 
+        z = [cells[i].x() for i in range(n)]
         dz = [cells[i + 1].x() - cells[i].x() for i in range(n - 1)]
         # nv -> Number of variables
         nv = len(cells[1].values())
 
         for i in range(nv):
             name = d._components[i]
+
+            # Get components at all points
+            v = [cells[j].value(i) for j in range(n)]
+
             # Slopes (s) for component i
             s = [
-                (cells[j + 1].value(i) - cells[j].value(i))
-                / (cells[j + 1].x() - cells[j].x())
+                (cells[j + 1].value(i) - cells[j].value(i)) / (z[j + 1] - z[j])
                 for j in range(n - 1)
             ]
 
+            # Range of values
+            vmin = min(v)
+            vmax = max(v)
             # Range of slopes
             smin = min(s)
             smax = max(s)
 
-            # Max absolute values
+            # Max absolute values of values and slopes
+            aa = max(abs(vmin), abs(vmax))
             ss = max(abs(smin), abs(smax))
+
+            # refine based on component i only if the range of v is
+            # greater than a fraction 'min_range' of max |v|. This
+            # eliminates components that consist of small fluctuations
+            # on a constant background.
+            if (vmax - vmin) > self._min_range * aa:
+                # maximum allowable difference in value between adjacent
+                # points.
+                dmax = self._slope * (vmax - vmin) + eps
+                for j in range(n - 1):
+                    r = abs(v[j + 1] - v[j]) / dmax
+                    if r > 1.0 and dz[j] >= 2 * self._min_grid:
+                        loc[j] = 1
+                        c[name] = 1
+
+                    if r >= self._prune:
+                        keep[j] = 1
+                        keep[j + 1] = 1
+                    elif j not in keep:
+                        keep[j] = -1
 
             # refine based on the slope of component i only if the
             # range of s is greater than a fraction 'min_range' of max
@@ -81,7 +122,7 @@ class Refiner:
                 # adjacent points
                 dmax = self._curve * (smax - smin)
                 for j in range(n - 2):
-                    r = abs(s[j + 1] - s[j]) / (dmax + eps / dz[j])
+                    r = abs(s[j + 1] - s[j]) / (dmax + (eps / dz[j]))
                     if (
                         r > 1.0
                         and dz[j] >= 2 * self._min_grid
@@ -96,38 +137,82 @@ class Refiner:
                     elif (j + 1) not in keep:
                         keep[j + 1] = -1
 
+        # Refine based on properties of the grid itself
+        for j in range(n - 1):
+            # Add a new point if the ratio with left interval is too large
+            if dz[j] > self._ratio * dz[j - 1]:
+                loc[j] = 1
+                c[f"point {j}"] = 1
+                keep[max(j - 1, 0)] = 1
+                keep[j] = 1
+                keep[min(j + 1, d._nx - 1)] = 1
+                keep[min(j + 2, d._nx - 1)] = 1
+
+            # Add a point if the ratio with right interval is too large
+            if dz[j] < dz[j - 1] / self._ratio:
+                loc[max(j - 1, 0)] = 1
+                c[f"point {max(j-1, 0)}"] = 1
+                keep[max(j - 2, 0)] = 1
+                keep[max(j - 1, 0)] = 1
+                keep[j] = 1
+                keep[min(j + 1, d._nx)] = 1
+
+            # Keep the point if removing would make the ratio with the left
+            # interval too large.
+            if j > 1 and z[j + 1] - z[j - 1] > self._ratio * dz[j - 2]:
+                keep[j] = 1
+
+            # Keep the point if removing would make the ratio with the right
+            # interval too large.
+            if j < n - 2 and z[j + 1] - z[j - 1] > self._ratio * dz[j + 1]:
+                keep[j] = 1
+
         # Don't allow pruning to remove multiple adjacent grid points
         # in a single pass.
         for j in range(2, n - 1):
-            if keep[j] == -1 and keep[j - 1] == -1:
+            if j in keep and j - 1 in keep and keep[j] == -1 and keep[j - 1] == -1:
                 keep[j] = 1
 
-        self.show_changes(loc, c)
+        # Finalize AMR changes
+        self.show_changes(loc, c, keep)
+        self.perform_changes(d, loc, keep)
 
+    def perform_changes(self, d, loc, keep):
         #######
         # AMR
         # Need to mark for deletion before deleting
         # as cell addition indices need to make sense
         #######
-        # Iterate over m_keep and remove points
+        cells = d.interior()
+        # Iterate over keep and remove points
         for i, cell in enumerate(cells):
             if i in keep and keep[i] == -1:
                 cell.to_delete = True
 
         # Add cells at loc
+        # Create separate list of cells and merge
+        to_merge = []
         for i in loc.keys():
             x = 0.5 * (cells[i + 1].x() + cells[i].x())
             value = 0.5 * (cells[i + 1].values() + cells[i].values())
-            cells.insert(i, Cell(x, value))
+            to_merge.append(Cell(x, value))
 
         # Delete marked cells
-        for cell in cells:
+        for i, cell in enumerate(cells):
             if cell.to_delete:
-                del cell
+                del cells[i]
 
-    def show_changes(cls, loc, c):
+        # Merge cells and sort by x
+        cells += to_merge
+        cells.sort()
+
+        # Set interior to cells
+        d.set_interior(cells)
+
+    def show_changes(self, loc, c, keep):
+        print("#" * 78)
+        # Show additions
         if len(loc) != 0:
-            print("#" * 78)
             print("Refining grid...")
             print("New points inserted after grid points ")
             for i in loc.keys():
@@ -136,6 +221,17 @@ class Refiner:
             for name in c.keys():
                 print(name, end=" ")
             print("")
-            print("#" * 78)
         else:
             print("No new points needed")
+
+        # Show deletions
+        num_deleted = list(keep.values()).count(-1)
+        if num_deleted != 0:
+            print("Deleted points at ")
+            for i in keep.keys():
+                if keep[i] == -1:
+                    print(i, end=" ")
+            print("")
+        else:
+            print("No new points deleted")
+        print("#" * 78)

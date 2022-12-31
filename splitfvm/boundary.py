@@ -27,5 +27,10 @@ class Boundary:
     def value(self, i: int):
         return self._value[i]
 
+    def set_x(self, x: float, xmin=0.0, xmax=1.0):
+        if x >= xmin and x <= xmax:
+            raise SFVM("Boundary cell cannot have interior X-value")
+        self._x = x
+
     def set_value(self, i: int, val):
         self._value[i] = val
