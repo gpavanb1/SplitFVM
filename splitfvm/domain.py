@@ -1,3 +1,5 @@
+import numpy as np
+
 from numpy import linspace, zeros
 from .boundary import btype, Boundary
 from .cell import Cell
@@ -68,6 +70,9 @@ class Domain:
         self._nx = len(cells)
         self._domain = [*self._domain[: self._nb], *cells, *self._domain[-self._nb :]]
 
+    def num_components(self):
+        return len(self._components)
+
     def component_index(self, v: str):
         return self._components.index(v)
 
@@ -83,6 +88,26 @@ class Domain:
             value_list.append(cell.values())
 
         return value_list
+
+    def listify_interior(self, split, split_loc):
+        interior_values = self.values()[self._nb : -self._nb]
+
+        if not split:
+            return np.array(interior_values).flatten()
+        else:
+            if split_loc is None:
+                raise SFVM("Split location must be specified in this case")
+
+            num_points = len(interior_values)
+            ret = []
+            # First add all the outer-block values
+            for i in range(num_points):
+                ret.extend(interior_values[i][:split_loc])
+            # Then add all the inner block values
+            for i in range(num_points):
+                ret.extend(interior_values[i][split_loc:])
+
+            return ret
 
     def update(self, dt: int, interior_residual_block: list[list[float]]):
         for i, cell in enumerate(self.interior()):
