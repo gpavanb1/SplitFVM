@@ -1,7 +1,8 @@
 import numpy as np
 import jax
 import numdifftools as nd
-from splitnewton import newton, split_newton
+from splitnewton.newton import newton
+from splitnewton.split_newton import split_newton
 
 from .domain import Domain
 from .error import SFVM
@@ -12,6 +13,11 @@ from .model import Model
 # ICs and BCs
 from .bc import apply_BC
 from .initialize import set_initial_condition
+
+
+def array_list_reshape(l, shape):
+    # Reshape to list of 1D numpy arrays
+    return [np.array(x) for x in np.reshape(l, shape).tolist()]
 
 
 class Simulation:
@@ -68,12 +74,12 @@ class Simulation:
 
         if split == False:
             # Reshape list
-            block = np.reshape(l, (num_points, nv), "C")
+            block = array_list_reshape(l, (num_points, nv))
         else:
             # Same as SplitNewton convention
             # Outer system will be excluding `loc`
-            outer_block = np.reshape(l[: split_loc * num_points], (-1, nv), "C")
-            inner_block = np.reshape(l[split_loc * num_points :], (-1, nv), "C")
+            outer_block = array_list_reshape(l[: split_loc * num_points], (-1, nv))
+            inner_block = array_list_reshape(l[split_loc * num_points :], (-1, nv))
 
             for i in range(np):
                 block = []
@@ -82,7 +88,7 @@ class Simulation:
         # Assign values to cells in domain
         cells = self._d.interior()
         for i, b in enumerate(cells):
-            b.set_value(block[i])
+            b.set_values(block[i])
 
     def get_residuals_from_list(self, l, split=False, split_loc=None):
         # Assign values from list
@@ -92,7 +98,7 @@ class Simulation:
         interior_residual_block = self._s.residuals(self._d)
 
         # Reshape residual block in list order
-        residual_list = interior_residual_block.flatten()
+        residual_list = np.array(interior_residual_block).flatten()
 
         return residual_list
 
@@ -102,13 +108,13 @@ class Simulation:
 
         if solver_type.lower() == "forward":
             return jax.jacfwd(_f)(l)
-        elif solver_type.lower == "reverse":
+        elif solver_type.lower() == "reverse":
             return jax.jacrev(_f)(l)
-        elif solver_type.lower == "numerical":
+        elif solver_type.lower() == "numerical":
             return nd.Jacobian(_f, method="central")(l)
 
     def steady_state(
-        self, split=False, split_loc=None, dt0=0.0, dtmax=1.0, armijo=False
+        self, split=False, split_loc=None, sparse=True, dt0=0.0, dtmax=1.0, armijo=False
     ):
         _f = lambda u: self.get_residuals_from_list(u, split, split_loc)
         _jac = lambda u: self.jacobian(u, split, split_loc)
@@ -117,7 +123,7 @@ class Simulation:
 
         if not split:
             xf, _, iter = newton(
-                _f, _jac, x0, sparse=True, dt0=dt0, dtmax=dtmax, armijo=armijo
+                _f, _jac, x0, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo
             )
         else:
             if split_loc is None:
@@ -126,7 +132,7 @@ class Simulation:
             num_points, _ = self.get_shape_from_list(x0)
             loc = num_points * split_loc
             xf, _, iter = split_newton(
-                _f, _jac, x0, loc, sparse=True, dt0=dt0, dtmax=dtmax, armijo=armijo
+                _f, _jac, x0, loc, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo
             )
 
         self.initialize_from_list(xf, split, split_loc)

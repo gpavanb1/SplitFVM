@@ -107,7 +107,7 @@ class Domain:
             for i in range(num_points):
                 ret.extend(interior_values[i][split_loc:])
 
-            return ret
+            return np.array(ret)
 
     def update(self, dt: int, interior_residual_block: list[list[float]]):
         for i, cell in enumerate(self.interior()):
