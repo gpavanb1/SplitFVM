@@ -78,12 +78,16 @@ class Simulation:
         else:
             # Same as SplitNewton convention
             # Outer system will be excluding `loc`
-            outer_block = array_list_reshape(l[: split_loc * num_points], (-1, nv))
-            inner_block = array_list_reshape(l[split_loc * num_points :], (-1, nv))
+            outer_block = array_list_reshape(
+                l[: split_loc * num_points], (-1, split_loc)
+            )
+            inner_block = array_list_reshape(
+                l[split_loc * num_points :], (-1, nv - split_loc)
+            )
 
-            for i in range(np):
-                block = []
-                block.append(np.concatenate(outer_block[i], inner_block[i]))
+            block = []
+            for i in range(num_points):
+                block.append(np.concatenate((outer_block[i], inner_block[i])))
 
         # Assign values to cells in domain
         cells = self._d.interior()
@@ -94,6 +98,10 @@ class Simulation:
         # Assign values from list
         # Note domain already exists and we preserve distances
         self.initialize_from_list(l, split, split_loc)
+
+        # Fill BCs
+        for c, bctype in self._bcs.items():
+            apply_BC(self._d, c, bctype)
 
         interior_residual_block = self._s.residuals(self._d)
 
@@ -136,3 +144,4 @@ class Simulation:
             )
 
         self.initialize_from_list(xf, split, split_loc)
+        return iter
