@@ -32,3 +32,25 @@ def fluxes(F, cell_sub, scheme):
         Fe = 0.5 * (Fl + Fr) - 0.5 * sigma * u_diff
 
         return Fw, Fe
+
+
+def diffusion_fluxes(D, cell_sub):
+    # Only central scheme for diffusion fluxes
+
+    # West Flux
+    ul = cell_sub[0].values()
+    uc = cell_sub[1].values()
+    Dl = D(ul)
+    Dr = D(uc)
+    dxw = 0.5 * (cell_sub[1].x() - cell_sub[0].x())
+    Dw = (Dr - Dl) / dxw
+
+    # East Flux
+    uc = cell_sub[1].values()
+    ur = cell_sub[2].values()
+    Dl = D(uc)
+    Dr = D(ur)
+    dxe = 0.5 * (cell_sub[2].x() - cell_sub[1].x())
+    De = (Dr - Dl) / dxe
+
+    return Dw, De

@@ -1,4 +1,4 @@
-from splitfvm.flux import fluxes
+from splitfvm.flux import fluxes, diffusion_fluxes
 
 
 class TransportEquation:
@@ -19,6 +19,6 @@ class TransportEquation:
 
         # Calculate fluxes
         Fw, Fe = fluxes(self.F, cell_sub, scheme)
-        # DFw, DFe = diffusion_fluxes(self.D, cell_sub, scheme)
-        rhs = self.S(cell_sub) - (1 / dx) * (Fe - Fw)  # + (DFe - DFw)
+        DFw, DFe = diffusion_fluxes(self.D, cell_sub)
+        rhs = self.S(cell_sub) - (1 / dx) * (Fe - Fw) + (1 / dx) * (DFe - DFw)
         return rhs
