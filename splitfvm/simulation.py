@@ -1,5 +1,4 @@
 import numpy as np
-import jax
 import numdifftools as nd
 from splitnewton.newton import newton
 from splitnewton.split_newton import split_newton
@@ -235,14 +234,7 @@ class Simulation:
         """
 
         _f = lambda u: self.get_residuals_from_list(u, split, split_loc)
-        solver_type = self._ss.get("jacobian_type", "numerical")
-
-        if solver_type.lower() == "forward":
-            return jax.jacfwd(_f)(l)
-        elif solver_type.lower() == "reverse":
-            return jax.jacrev(_f)(l)
-        elif solver_type.lower() == "numerical":
-            return nd.Jacobian(_f, method="central")(l)
+        return nd.Jacobian(_f, method="central")(l)
 
     def steady_state(
         self, split=False, split_loc=None, sparse=True, dt0=0.0, dtmax=1.0, armijo=False

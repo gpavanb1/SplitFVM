@@ -1,6 +1,4 @@
 black
-jax
-jaxlib
 matplotlib
 numdifftools
 numpy
