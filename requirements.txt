@@ -1,0 +1,7 @@
+black
+jax
+jaxlib
+matplotlib
+numdifftools
+numpy
+SplitNewton==0.1.4
