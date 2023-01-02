@@ -3,6 +3,24 @@ from .domain import Domain
 
 # https://github.com/comp-physics/WENO-scalar/blob/master/params.py
 def set_initial_condition(d: Domain, v: str, type="gaussian"):
+    """
+    Set the initial condition of a given component in a domain.
+
+    Parameters
+    ----------
+    d : Domain
+        The domain to set the initial condition in.
+    v : str
+        The component to set the initial condition for.
+    type : str, optional
+        The type of initial condition to set. Options are: 'tophat', 'sine', 'rarefaction', 'gaussian'. Default is 'gaussian'.
+
+    Raises
+    ------
+    NotImplementedError
+        If the specified type of initial condition is not implemented.
+    """
+
     # Find index of component
     idx = d.component_index(v)
 

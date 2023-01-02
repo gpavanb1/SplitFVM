@@ -2,13 +2,44 @@ from splitfvm.flux import fluxes, diffusion_fluxes
 
 
 class TransportEquation:
+    """
+    A class representing a transport equation.
+
+    Parameters
+    ----------
+    F : function
+        The function representing the flux for the equation.
+    D : function
+        The function representing the diffusion term for the equation.
+    S : function
+        The function representing the source term for the equation.
+    """
+
     def __init__(self, F, D, S):
+        """
+        Initialize a `TransportEquation` object.
+        """
         self.F = F
         self.D = D
         self.S = S
-        pass
 
     def residuals(self, cell_sub, scheme):
+        """
+        Calculate the residuals for the transport equation at the given cell subset using the given scheme.
+
+        Parameters
+        ----------
+        cell_sub : list of Cell
+            The subset of cells to calculate the residuals for.
+        scheme : Scheme
+            The scheme to use to calculate the residuals.
+
+        Returns
+        -------
+        numpy.ndarray
+            The residuals for the transport equation at the given cell subset.
+        """
+
         # Cell width
         # Calculate for center cell
         # Average of distance between adjacent cell centers

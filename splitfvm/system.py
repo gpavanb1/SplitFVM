@@ -5,15 +5,38 @@ from .flux import Schemes
 
 class System:
     """
-    Construct residuals given various types of
-    equations in the models
+    A class representing a system of equations.
+
+    Parameters
+    ----------
+    model : Model
+        The model for which to solve the system of equations.
+    scheme : Schemes, optional
+        The discretization scheme to use for the system. Defaults to Schemes.LF.
     """
 
     def __init__(self, model, scheme=Schemes.LF):
+        """
+        Initialize a System object.
+        """
         self._model = model
         self._scheme = scheme
 
     def residuals(self, d: Domain):
+        """
+        Calculate the residuals for the system of equations.
+
+        Parameters
+        ----------
+        d : Domain
+            The domain for which to calculate the residuals.
+
+        Returns
+        -------
+        rhs_list : list of ndarray
+            The list of residual arrays for each cell in the domain.
+        """
+
         cells = d.cells()
 
         # Interior indices

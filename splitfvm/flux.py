@@ -7,6 +7,24 @@ Directions = Enum("Directions", "WEST EAST")
 
 
 def fluxes(F, cell_sub, scheme):
+    """
+    Calculate the fluxes of a given stencil.
+
+    Parameters
+    ----------
+    F : function
+        The flux function.
+    cell_sub : list of Cell
+        The stencil.
+    scheme : Schemes
+        The scheme to use.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        The west and east fluxes.
+    """
+
     if scheme == Schemes.LF:
         if len(cell_sub) != 3:
             raise SFVM("Improper stencil size for LF scheme")
@@ -35,6 +53,22 @@ def fluxes(F, cell_sub, scheme):
 
 
 def diffusion_fluxes(D, cell_sub):
+    """
+    Calculate the diffusion fluxes of a given stencil.
+
+    Parameters
+    ----------
+    D : function
+        The diffusion function.
+    cell_sub : list of Cell
+        The stencil.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        The west and east diffusion fluxes.
+    """
+
     # Only central scheme for diffusion fluxes
 
     # West Flux

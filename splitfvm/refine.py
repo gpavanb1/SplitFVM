@@ -8,6 +8,32 @@ eps = math.ulp(1.0)
 
 
 class Refiner:
+    """
+    Class for refining grids using slope, curve, and prune.
+
+    Parameters
+    ----------
+    ratio : float, optional
+        Specifies the desired refinement ratio, by default 10.0
+    slope : float, optional
+        The slope tolerance, by default 0.8
+    curve : float, optional
+        The curve tolerance, by default 0.8
+    prune : float, optional
+        The prune tolerance, by default -0.001
+    npmax : int, optional
+        The maximum number of points in the grid, by default 1000
+    min_range : float, optional
+        The minimum range span factor, by default 0.01
+    min_grid : float, optional
+        The minimum grid spacing, by default 1e-10
+
+    Raises
+    ------
+    SFVM
+        If the `ratio` is less than 2.0, if `slope` or `curve` is not between 0.0 and 1.0, or if `prune` is not less than `curve` and `slope`.
+    """
+
     def __init__(self):
         # Default values
         # Borrowed from Cantera
@@ -27,6 +53,26 @@ class Refiner:
         self._min_grid = 1e-10
 
     def set_criteria(self, ratio, slope, curve, prune):
+        """
+        Sets the refinement criteria.
+
+        Parameters
+        ----------
+        ratio : float
+            The desired refinement ratio.
+        slope : float
+            The slope tolerance.
+        curve : float
+            The curve tolerance.
+        prune : float
+            The prune tolerance.
+
+        Raises
+        ------
+        SFVM
+            If the `ratio` is less than 2.0, if `slope` or `curve` is not between 0.0 and 1.0, or if `prune` is not less than `curve` and `slope`.
+        """
+
         if ratio < 2.0:
             raise SFVM(f"ratio must be greater than 2.0 ({ratio} was specified).")
         elif slope < 0.0 or slope > 1.0:
@@ -44,9 +90,32 @@ class Refiner:
         self._prune = prune
 
     def set_max_points(self, npmax):
+        """
+        Sets the maximum number of points in the grid.
+
+        Parameters
+        ----------
+        npmax : int
+            Maximum number of points in the grid.
+
+        """
         self._npmax = npmax
 
     def refine(self, d: Domain):
+        """
+        Refines the grid using given criteria.
+
+        Parameters
+        ----------
+        d : Domain
+            Domain object to be refined.
+
+        Raises
+        ------
+        SFVM
+            If maximum number of points in the grid is exceeded.
+        """
+
         # https://cantera.org/documentation/docs-2.5/doxygen/html/dd/d3c/refine_8cpp_source.html
         # Using only slope, curve and prune
         cells = d.interior()
@@ -182,6 +251,19 @@ class Refiner:
         self.perform_changes(d, loc, keep)
 
     def perform_changes(self, d, loc, keep):
+        """
+        Perform changes to the domain d according to the changes specified in
+        loc and keep.
+
+        Parameters
+        ----------
+        d : Domain
+            The domain to perform changes on.
+        loc : Dict[int, int]
+            A dictionary with locations where insertions are to happen
+        keep : Dict[int, int]
+            A dictionary that indicates whether a cell is to be kept or deleted. -1 indicates deletion and 1 indicates preservation
+        """
         #######
         # AMR
         # Need to mark for deletion before deleting
@@ -214,6 +296,9 @@ class Refiner:
         d.set_interior(cells)
 
     def show_changes(self, loc, c, keep):
+        """
+        Print information about changes made to the domain.
+        """
         print("#" * 78)
         # Show additions
         if len(loc) != 0:
