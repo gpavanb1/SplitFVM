@@ -72,10 +72,7 @@ class Simulation:
         # This gives block-diagonal structure in unsplit case
         num_points, nv = self.get_shape_from_list(l)
 
-        if split == False:
-            # Reshape list
-            block = array_list_reshape(l, (num_points, nv))
-        else:
+        if split:
             # Same as SplitNewton convention
             # Outer system will be excluding `loc`
             outer_block = array_list_reshape(
@@ -88,6 +85,9 @@ class Simulation:
             block = []
             for i in range(num_points):
                 block.append(np.concatenate((outer_block[i], inner_block[i])))
+        else:
+            # Reshape list
+            block = array_list_reshape(l, (num_points, nv))
 
         # Assign values to cells in domain
         cells = self._d.interior()
@@ -105,8 +105,15 @@ class Simulation:
 
         interior_residual_block = self._s.residuals(self._d)
 
-        # Reshape residual block in list order
-        residual_list = np.array(interior_residual_block).flatten()
+        if split:
+            outer_block = [x[:split_loc] for x in interior_residual_block]
+            inner_block = [x[split_loc:] for x in interior_residual_block]
+            outer_list = np.array(outer_block).flatten()
+            inner_list = np.array(inner_block).flatten()
+            residual_list = np.concatenate((outer_list, inner_list))
+        else:
+            # Reshape residual block in list order
+            residual_list = np.array(interior_residual_block).flatten()
 
         return residual_list
 
