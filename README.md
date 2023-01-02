@@ -4,7 +4,7 @@
 
 ![img](assets/logo.png)
 
-1D Finite-Volume with adaptive mesh refinement and steady-state solver using Newton and Split-Newton approach
+1D [Finite-Volume](https://en.wikipedia.org/wiki/Finite_volume_method) with [adaptive mesh refinement](https://en.wikipedia.org/wiki/Adaptive_mesh_refinement) and steady-state solver using Newton and [Split-Newton](https://github.com/gpavanb1/SplitNewton) approach
 
 ## What does 'split' mean?
 
@@ -44,9 +44,16 @@ s = Simulation(d, m, ics, bcs)
 # Advance in time or to steady state
 s.evolve(dt=0.1)
 iter = s.steady_state()
+
+# Visualize
+draw(d)
 ```
 
 ## Whom to contact?
 
 Please direct your queries to [gpavanb1](http://github.com/gpavanb1)
 for any questions.
+
+## Acknowledgements
+
+Special thanks to [Cantera](https://github.com/Cantera/cantera) and [WENO-Scalar](https://github.com/comp-physics/WENO-scalar) for serving as an inspiration for code architecture
