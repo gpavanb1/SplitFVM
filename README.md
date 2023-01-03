@@ -2,7 +2,7 @@
 
 [![Downloads](https://pepy.tech/badge/splitfvm)](https://pepy.tech/project/splitfvm)
 
-![img](https://github.com/gpavanb1/SplitFVM/blob/main/assets/logo.png)
+![img](https://github.com/gpavanb1/SplitFVM/blob/main/assets/logo.jpg)
 
 1D [Finite-Volume](https://en.wikipedia.org/wiki/Finite_volume_method) with [adaptive mesh refinement](https://en.wikipedia.org/wiki/Adaptive_mesh_refinement) and steady-state solver using Newton and [Split-Newton](https://github.com/gpavanb1/SplitNewton) approach
 
