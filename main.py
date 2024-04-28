@@ -26,7 +26,16 @@ logging.basicConfig(level=loglevel)
 m = AdvectionDiffusion(c=0.2, nu=0.001)
 d = Domain.from_size(20, 2, ["u", "v"])
 ics = {"u": "gaussian", "v": "rarefaction"}
-bcs = {"u": "periodic", "v": "periodic"}
+bcs = {
+    "u": {
+        "left": "periodic",
+        "right": "periodic"
+    },
+    "v": {
+        "left": {"dirichlet": 3},
+        "right": {"dirichlet": 4}
+    }
+}
 s = Simulation(d, m, ics, bcs)
 
 # Initial domain
