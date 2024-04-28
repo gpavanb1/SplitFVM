@@ -38,7 +38,16 @@ d = Domain.from_size(nx=20, ng=2, ["u", "v"])
 
 # Set IC and BC
 ics = {"u": "gaussian", "v": "rarefaction"}
-bcs = {"u": "periodic", "v": "periodic"}
+bcs = {
+    "u": {
+        "left": "periodic",
+        "right": "periodic"
+    },
+    "v": {
+        "left": {"dirichlet": 3},
+        "right": {"dirichlet": 4}
+    }
+}
 s = Simulation(d, m, ics, bcs)
 
 # Advance in time or to steady state
