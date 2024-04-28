@@ -2,7 +2,7 @@ from matplotlib.pyplot import plot
 from .domain import Domain
 
 
-def draw(d: Domain, l: str):
+def draw(d: Domain, l: str, interior=False):
     """
     Plot the values of the domain.
 
@@ -14,4 +14,4 @@ def draw(d: Domain, l: str):
         The label to use for the plot.
     """
 
-    plot(d.positions(), d.values(), "-o", label=l)
+    plot(d.positions(interior), d.values(interior), "-o", label=l)

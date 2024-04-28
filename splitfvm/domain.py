@@ -30,7 +30,8 @@ class Domain:
         # nb indicates number on each side
         self._nb = int(len(boundaries) / 2)
         self._nx = len(cells)
-        self._domain = [*(boundaries[: self._nb]), *cells, *(boundaries[self._nb :])]
+        self._domain = [*(boundaries[: self._nb]), *
+                        cells, *(boundaries[self._nb:])]
         self._components = components
 
     @classmethod
@@ -119,7 +120,7 @@ class Domain:
         """
         return self._nb
 
-    def cells(self):
+    def cells(self, interior=False):
         """
         Get the cells in the domain.
 
@@ -128,7 +129,7 @@ class Domain:
         list of Cell
             The cells in the domain.
         """
-        return self._domain
+        return self._domain if not interior else self.interior()
 
     def boundaries(self):
         """
@@ -139,7 +140,7 @@ class Domain:
         tuple of Boundary
             The left and right boundaries of the domain.
         """
-        return self._domain[: self._nb], self._domain[-self._nb :]
+        return self._domain[: self._nb], self._domain[-self._nb:]
 
     def interior(self):
         """
@@ -150,7 +151,7 @@ class Domain:
         list of Cell
             The interior cells in the domain.
         """
-        return self._domain[self._nb : -self._nb]
+        return self._domain[self._nb: -self._nb]
 
     def set_interior(self, cells):
         """
@@ -162,7 +163,8 @@ class Domain:
             The new interior cells in the domain.
         """
         self._nx = len(cells)
-        self._domain = [*self._domain[: self._nb], *cells, *self._domain[-self._nb :]]
+        self._domain = [*self._domain[: self._nb],
+                        *cells, *self._domain[-self._nb:]]
 
     def num_components(self):
         """
@@ -208,7 +210,7 @@ class Domain:
         """
         return self._components[i]
 
-    def positions(self):
+    def positions(self, interior=False):
         """
         Get the positions of all cells in the domain.
 
@@ -217,9 +219,9 @@ class Domain:
         list of float
             The positions of all cells in the domain.
         """
-        return [cell.x() for cell in self.cells()]
+        return [cell.x() for cell in self.cells(interior)]
 
-    def values(self):
+    def values(self, interior=False):
         """
         Get the values of all cells in the domain.
 
@@ -229,7 +231,7 @@ class Domain:
             The values of all cells in the domain.
         """
         value_list = []
-        for cell in self.cells():
+        for cell in self.cells(interior):
             value_list.append(cell.values())
 
         return value_list
@@ -251,7 +253,7 @@ class Domain:
             The values of all interior cells in the domain in a list.
         """
 
-        interior_values = self.values()[self._nb : -self._nb]
+        interior_values = self.values()[self._nb: -self._nb]
 
         if not split:
             return np.array(interior_values).flatten()
