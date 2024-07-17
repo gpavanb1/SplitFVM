@@ -34,7 +34,7 @@ m = AdvectionDiffusion(c=0.2, nu=0.001)
 
 # Define the domain and variables
 # ng stands for ghost cell count
-d = Domain.from_size(nx=20, ng=2, ["u", "v"])
+d = Domain.from_size(20, 2, ["u", "v"]) # nx, ng, variables
 
 # Set IC and BC
 ics = {"u": "gaussian", "v": "rarefaction"}
@@ -55,7 +55,7 @@ s.evolve(dt=0.1)
 iter = s.steady_state()
 
 # Visualize
-draw(d)
+draw(d, "label")
 ```
 
 ## Whom to contact?

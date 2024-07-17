@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setup(
     name="SplitFVM",
-    version="0.1.1",
+    version="0.1.2",
     description="1D Finite-Volume Split Newton Solver",
     url="https://github.com/gpavanb1/SplitFVM",
     author="gpavanb1",
     author_email="gpavanb@gmail.com",
     license="MIT",
-    packages=["splitfvm"],
+    packages=["splitfvm", "splitfvm.equations"],
     install_requires=["numpy", "numdifftools", "matplotlib", "splitnewton"],
     long_description=long_description,
     long_description_content_type="text/markdown",
