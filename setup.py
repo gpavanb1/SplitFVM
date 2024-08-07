@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="SplitFVM",
-    version="0.1.3",
+    version="0.2",
     description="1D Finite-Volume Split Newton Solver",
     url="https://github.com/gpavanb1/SplitFVM",
     author="gpavanb1",

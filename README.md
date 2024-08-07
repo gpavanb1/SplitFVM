@@ -34,7 +34,7 @@ m = AdvectionDiffusion(c=0.2, nu=0.001)
 
 # Define the domain and variables
 # ng stands for ghost cell count
-d = Domain.from_size(20, 2, ["u", "v"]) # nx, ng, variables
+d = Domain.from_size(20, 2, ["u", "v", "w"]) # nx, ng, variables
 
 # Set IC and BC
 ics = {"u": "gaussian", "v": "rarefaction"}
@@ -46,13 +46,18 @@ bcs = {
     "v": {
         "left": {"dirichlet": 3},
         "right": {"dirichlet": 4}
+    },
+    "w": {
+        "left": {"dirichlet": 2},
+        "right": "periodic"
     }
 }
 s = Simulation(d, m, ics, bcs)
 
 # Advance in time or to steady state
 s.evolve(dt=0.1)
-iter = s.steady_state()
+bounds = [[-1., -2., 0.], [5., 4., 3.]]
+iter = s.steady_state(split=True, split_loc=1, bounds=bounds)
 
 # Visualize
 draw(d, "label")

@@ -24,7 +24,7 @@ logging.basicConfig(level=loglevel)
 
 # Define the problem
 m = AdvectionDiffusion(c=0.2, nu=0.001)
-d = Domain.from_size(20, 2, ["u", "v"])
+d = Domain.from_size(20, 2, ["u", "v", "w"])
 ics = {"u": "gaussian", "v": "rarefaction"}
 bcs = {
     "u": {
@@ -34,6 +34,10 @@ bcs = {
     "v": {
         "left": {"dirichlet": 3},
         "right": {"dirichlet": 4}
+    },
+    "w": {
+        "left": {"dirichlet": 2},
+        "right": "periodic"
     }
 }
 s = Simulation(d, m, ics, bcs)
@@ -43,7 +47,8 @@ d_init = deepcopy(d)
 
 # Advance in time
 s.evolve(0.01)
-iter = s.steady_state()
+bounds = [[-1., -2., 0.], [5., 4., 3.]]
+iter = s.steady_state(split=True, split_loc=1, bounds=bounds)
 print(f"Took {iter} iterations")
 
 # Show plot

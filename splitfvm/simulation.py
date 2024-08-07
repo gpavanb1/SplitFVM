@@ -158,7 +158,7 @@ class Simulation:
                 l[: split_loc * num_points], (-1, split_loc)
             )
             inner_block = array_list_reshape(
-                l[split_loc * num_points :], (-1, nv - split_loc)
+                l[split_loc * num_points:], (-1, nv - split_loc)
             )
 
             block = []
@@ -214,6 +214,44 @@ class Simulation:
 
         return residual_list
 
+    def extend_bounds(self, bounds, num_points, nv, split=False, split_loc=None):
+        """
+        Extends the provided input bounds based on whether there is a split or not.
+
+        Parameters:
+        ----------
+        bounds : list of list
+            A list containing two lists, each of size nv, representing the lower and upper bounds.
+        num_points : int
+            The number of points to extend each bound to.
+        nv : int
+            The number of variables, indicating the length of each bound list.
+        split : bool, optional
+            A flag indicating whether to split the bounds at a specific location. Default is False.
+        split_loc : int, optional
+            The index at which to split the bounds if split is True. Default is None.
+
+        Returns:
+        -------
+        list of list
+            A list containing the extended lower and upper bounds.
+        """
+        # Check if bounds is a 2-list, each of size nv
+        if len(bounds) != 2:
+            raise SFVM("Bounds must be a list of 2 lists")
+        else:
+            if len(bounds[0]) != nv or len(bounds[1]) != nv:
+                raise SFVM(
+                    "Each list in bounds must be of length - number of variables")
+
+        if not split:
+            return [bounds[0] * num_points, bounds[1] * num_points]
+        else:
+            if split_loc is None:
+                raise SFVM("split_loc must be provided if split is True")
+            return [bounds[0][:split_loc] * num_points + bounds[0][split_loc:] * num_points,
+                    bounds[1][:split_loc] * num_points + bounds[1][split_loc:] * num_points]
+
     def jacobian(self, l, split=False, split_loc=None):
         """
         Calculate the Jacobian of the system.
@@ -233,11 +271,11 @@ class Simulation:
             The Jacobian of the system.
         """
 
-        _f = lambda u: self.get_residuals_from_list(u, split, split_loc)
+        def _f(u): return self.get_residuals_from_list(u, split, split_loc)
         return nd.Jacobian(_f, method="central")(l)
 
     def steady_state(
-        self, split=False, split_loc=None, sparse=True, dt0=0.0, dtmax=1.0, armijo=False
+        self, split=False, split_loc=None, sparse=True, dt0=0.0, dtmax=1.0, armijo=False, bounds=None
     ):
         """
         Solve for the steady state of the system.
@@ -263,23 +301,27 @@ class Simulation:
             The number of iterations performed.
         """
 
-        _f = lambda u: self.get_residuals_from_list(u, split, split_loc)
-        _jac = lambda u: self.jacobian(u, split, split_loc)
+        def _f(u): return self.get_residuals_from_list(u, split, split_loc)
+        def _jac(u): return self.jacobian(u, split, split_loc)
 
         x0 = self._d.listify_interior(split, split_loc)
+        num_points, nv = self.get_shape_from_list(x0)
+
+        # Extend bounds based on input
+        ext_bounds = self.extend_bounds(
+            bounds, num_points, nv, split, split_loc)
 
         if not split:
             xf, _, iter = newton(
-                _f, _jac, x0, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo
-            )
+                _f, _jac, x0, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo,
+                bounds=ext_bounds)
         else:
             if split_loc is None:
-                raise SFVM("Split location must be specified in this case")
+                raise SFDM("Split location must be specified in this case")
 
-            num_points, _ = self.get_shape_from_list(x0)
             loc = num_points * split_loc
             xf, _, iter = split_newton(
-                _f, _jac, x0, loc, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo
+                _f, _jac, x0, loc, sparse=sparse, dt0=dt0, dtmax=dtmax, armijo=armijo, bounds=ext_bounds
             )
 
         self.initialize_from_list(xf, split, split_loc)
